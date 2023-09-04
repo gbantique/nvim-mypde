@@ -1,0 +1,63 @@
+---------- CONFIGURE MASON -------------
+require('mason').setup({
+  ui = {
+    border = 'rounded'
+  }
+})
+
+
+---------- CONFIGURE LSP-ZERO ----------
+local lsp = require('lsp-zero').preset({})
+
+lsp.on_attach(function(client, bufnr)
+  -- see :help lsp-zero-keybindings
+  -- to learn the available actions
+  lsp.default_keymaps({buffer = bufnr})
+end)
+
+local get_intelephense_license = function ()
+    local f = assert(io.open(os.getenv("HOME") .. "/intelephense/license.txt", "rb"))
+    local content = f:read("*a")
+    f:close()
+    return string.gsub(content, "%s+", "")
+end
+
+lsp.ensure_installed {
+  'intelephense',
+  'pylsp',
+  'jedi_language_server',
+  'pyright',
+--  'lua_ls',
+  'html',
+  'cssls',
+  'tsserver',
+  'intelephense',
+}
+
+--require('lspconfig').lua_ls.setup(lsp.nvim_lua_ls())
+-- Configure Lua LSP
+-- This will use a locally installed lua-language-server
+require("lspconfig").lua_ls.setup {
+--  capabilities = capabilities,
+  settings = {
+    Lua = {
+      diagnostics = {
+        globals = { "vim" },
+      },
+      workspace = {
+        library = {
+          [vim.fn.expand "$VIMRUNTIME/lua"] = true,
+          [vim.fn.stdpath "config" .. "/lua"] = true,
+        },
+      },
+    },
+  }
+}
+
+require('lspconfig').intelephense.setup({
+  init_options = {
+    licenceKey = get_intelephense_license()
+  },
+})
+
+lsp.setup()

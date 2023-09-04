@@ -1,0 +1,93 @@
+-- Configure Mason
+require("mason").setup()
+require("mason-lspconfig").setup()
+
+local servers = {
+  -- Rust
+  --{ 'rust_analyzer' },
+
+  -- Python
+  { 'pylsp' },
+  { 'jedi_language_server' },
+  { 'pyright' },
+
+  -- Lua
+  { 'lua_ls',
+    settings = {
+      Lua = {
+        diagnostics = {
+          globals = { 'vim' },
+        },
+        telemetry = {
+          enable = false,
+        },
+        workspace = {
+          library = {
+            [vim.fn.expand "$VIMRUNTIME/lua"] = true,
+            [vim.fn.stdpath "config" .. "/lua"] = true,
+          },
+        },
+      },
+    },
+  },
+  { 'html', },
+  { 'cssls', },
+  { 'tsserver', },
+  { 'intelephense', 
+      settings = {
+        intelephense = {
+          format = { braces = "k&r" },
+          environment = { phpVersion = "7.4.0" },
+        },
+      },
+      root_dir = require("lspconfig").util.root_pattern(".git", "package.json"),
+      handlers = {
+        ["client/registerCapability"] = function(_, _, _, _)
+          return { result = nil, error = nil }
+        end,
+        ["workspace/configuration"] = function(_, _, _, _)
+          return { result = nil, error = nil }
+        end,
+      },
+  },
+}
+
+-- Only enable the server if it's installed on the system
+local lsp = require('lspconfig')
+for _, server in pairs(servers) do
+    local config = lsp[server[1]]
+    local server_executable = config.document_config.default_config.cmd
+    if(type(server_executable) ~= "table") then
+        break
+    end
+    server_executable = server_executable[1]
+
+    if(vim.fn.executable(server_executable) == 1) then
+        local opts = {}
+        for k, v in pairs(server) do
+            if type(k) ~= 'number' then
+                opts[k] = v
+            end
+        end
+
+        config.setup(opts)
+    end
+end
+
+
+require('lspsaga').setup({
+  code_action_icon = "💡",
+  symbol_in_winbar = {
+    in_custom = false,
+    enable = true,
+    separator = ' ',
+    show_file = true,
+    file_formatter = ""
+  },
+})
+
+vim.keymap.set("n", "gd", "<cmd>Lspsaga peek_definition<CR>", { silent = true })
+vim.keymap.set("n", "gD", "<cmd>Lspsaga peek_type_definition<CR>", { silent = true })
+vim.keymap.set('n', 'K', '<Cmd>Lspsaga hover_doc<cr>', { silent = true })
+vim.keymap.set({"n","v"}, "<leader>ca", "<cmd>Lspsaga code_action<CR>", { silent = true })
+vim.keymap.set("n", "<leader>rn", "<cmd>Lspsaga rename<CR>", { silent = true })
